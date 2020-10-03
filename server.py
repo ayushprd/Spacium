@@ -1,7 +1,7 @@
 import sys
 from json import dumps
 from flask import Flask, request
-import emissions
+from emissions import calc_co2, calc_co
 import json
 
 
@@ -18,20 +18,29 @@ def defaulthandler(err):
     })
     response.content_type = 'application/json'
     return response
-
 APP = Flask(__name__)
 
 APP.config['TRAP_HTTP_EXCEPTIONS'] = True
 APP.register_error_handler(Exception, defaulthandler)
 
-@APP.route('/home/emissions', methods=['POST'])
+@APP.route('/', methods=['POST', 'GET'])
 def calculate_emissions():
-    data = request.get_json()
-    output = emissions.emissions(data['distance_travelled'], data['make'], data['vehicle_class'])
+    if request.method == 'POST':
 
-    return dumps(output)
-    
+        make = request.form['make']
+        distance_travelled = request.form['distance_travelled']
+        vehicle_class = request.form['vehicle_class']
+
+        co2 = calc_co2(float(distance_travelled), make, vehicle_class)
+        co = calc_co(float(distance_travelled), make, vehicle_class)
+
+        output = {"CO2 emissions":co2, "CO emissions":co}
+
+        return dumps(output)
+
+    else:
+        return("Our home page goes here")
 
 if __name__ == "__main__":
-    APP.run(port=(int(sys.argv[1]) if len(sys.argv) == 2 else 8080))
+    APP.run(debug=True, port=(int(sys.argv[1]) if len(sys.argv) == 2 else 8080))
 
