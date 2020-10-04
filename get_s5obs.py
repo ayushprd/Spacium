@@ -76,6 +76,8 @@ def get_s5obs(lon, lat, start, end, scale=30, qc=1):
         # Put data in a dataframe
         datadf = pd.DataFrame(l_data_dict)
         
+        datadf = datadf.to_json()
+
         return datadf
     # if ROI is a polygon
     elif (df.geometry.type == "Polygon").bool():

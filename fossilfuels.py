@@ -12,14 +12,21 @@ def get_fossilfuels(lon, lat, date):
 
     dateobj = datetime.datetime.strptime(date, "%Y-%m-%d")
 
-    month = dateobj.month
+    year = dateobj.year
+    
+    if year == 2018:
+        month = dateobj.month
 
-    ds = xr.open_dataset('NASAfossilfuels.nc')
+        ds = xr.open_dataset('NASAfossilfuels.nc')
 
-    data = ds.land.sel(month=month, lon=lon, lat=lat, method='nearest')
+        data = ds.land.sel(month=month, lon=lon, lat=lat, method='nearest')
 
-    data = data.values
+        data = data.values
 
-    data = data.tolist()
+        data = data.tolist()
 
-    return data
+        return data
+    
+    else:
+        data = "NA"
+        return data
