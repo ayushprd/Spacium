@@ -1,4 +1,5 @@
 from gee_utils import create_geo, get_sitecoord, get_sitename, calc_ndvi
+from create_geojson import create_geojson
 import ee
 import pandas as pd
 import geopandas as gpd
@@ -11,15 +12,11 @@ import re
 ee.Initialize()
 
 
-def get_s5obs(geofile, outdir, start, end, scale=30, qc=1):
+def get_s5obs(lon, lat, start, end, scale=30, qc=1):
     """
     Extracts Sentinel 5 data from GEE
     Parameters
     ----------
-    geofile (str) -- path to the file containing the name and coordinates of ROI, currently tested with geojson. 
-    
-    outdir (str) -- path to the directory where the output file is stored. If specified directory does not exists, it is created.
-  
     start (str) -- starting date of the data request in the form YYYY-MM-DD
     
     end (str) -- ending date areaof the data request in the form YYYY-MM-DD
@@ -28,9 +25,9 @@ def get_s5obs(geofile, outdir, start, end, scale=30, qc=1):
     -------
     
     datadf -- dataframe containing observations
-    
-    Caveat: currently only tested with Polygon coordinates
     """
+
+    geofile = create_geojson(lon, lat, './')
 
     def reduce_region(image):
         """
@@ -71,40 +68,22 @@ def get_s5obs(geofile, outdir, start, end, scale=30, qc=1):
         geo = create_geo(geofile)
 
         # get the data
+        landsat = landsat.select(['CO_column_number_density'])
         l_data = landsat.filterBounds(geo).getRegion(geo, scale).getInfo()
         # put the data inside a list of dictionary
         l_data_dict = [dict(zip(l_data[0], values)) for values in l_data[1:]]
 
-        def getdate(filename):
-            """
-            calculates Date from the landsat id
-            """
-            string = re.compile(
-                r"(?P<version>LC08|LE07|LT05|LT04)_(?P<path>\d{6})_(?P<date>\d{8})"
-            )
-            x = string.search(filename)
-            d = datetime.datetime.strptime(x.group("date"), "%Y%m%d").date()
-            return d
-
-        # pop out unnecessary keys and add date
-        for d in l_data_dict:
-            d.pop("longitude", None)
-            d.pop("latitude", None)
-            d.pop("time", None)
-            d.update(time=getdate(d["id"]))
-
         # Put data in a dataframe
         datadf = pd.DataFrame(l_data_dict)
-        # converting date to the numpy date format
-        datadf["time"] = datadf["time"].apply(lambda x: np.datetime64(x))
-
+        
+        return datadf
     # if ROI is a polygon
     elif (df.geometry.type == "Polygon").bool():
 
         geo = create_geo(geofile)
 
         # get the data
-        l_data = landsat.filterBounds(geo).map(reduce_region).getInfo()
+        l_data = landsat.filterBounds(geo).map(reduce_region).select(['CO_column_number_density']).getInfo()
 
         def l8_fc2dict(fc):
             """
@@ -131,3 +110,4 @@ def get_s5obs(geofile, outdir, start, end, scale=30, qc=1):
         raise ValueError("geometry choice not supported")
 
     return datadf
+
