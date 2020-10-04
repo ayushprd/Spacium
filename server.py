@@ -25,32 +25,28 @@ APP = Flask(__name__)
 APP.config['TRAP_HTTP_EXCEPTIONS'] = True
 APP.register_error_handler(Exception, defaulthandler)
 
-@APP.route('/', methods=['POST', 'GET'])
+@APP.route('/', methods=['POST'])
 def calculate_emissions():
-    if request.method == 'POST':
 
-        make               = request.form['make']
-        distance_travelled = request.form['distance_travelled']
-        vehicle_class      = request.form['vehicle_class']
+    make               = request.form['make']
+    distance_travelled = request.form['distance_travelled']
+    vehicle_class      = request.form['vehicle_class']
 
+    longitude          = request.form['longitude']
+    latitude           = request.form['latitude']
+    start              = request.form['start']
+    end                = request.form['end']
         
-        longitude          = request.form['longitude']
-        latitude           = request.form['latitude']
-        start              = request.form['start']
-        end                = request.form['end']
+    co2 = calc_co2(float(distance_travelled), make, vehicle_class)
+    co = calc_co(float(distance_travelled), make, vehicle_class)
         
-        co2 = calc_co2(float(distance_travelled), make, vehicle_class)
-        co = calc_co(float(distance_travelled), make, vehicle_class)
+    fossilfuelco2 = get_fossilfuels(float(longitude), float(latitude), start)
+    co_observed = get_s5obs(float(longitude), float(latitude), start, end)
         
-        fossilfuelco2 = get_fossilfuels(float(longitude), float(latitude), start)
-        co_observed = get_s5obs(float(longitude), float(latitude), start, end)
-        
-        output = {"CO2 emissions":co2, "CO emissions":co, "CO2 fossil fuel observation":fossilfuelco2, "CO observed":co_observed}
+    output = {"CO2 emissions":co2, "CO emissions":co, "CO2 fossil fuel observation":fossilfuelco2, "CO observed":co_observed}
 
-        return dumps(output)
+    return dumps(output)
 
-    else:
-        return("Our home page goes here")
 
 if __name__ == "__main__":
     APP.run(debug=True, port=(int(sys.argv[1]) if len(sys.argv) == 2 else 8080))
