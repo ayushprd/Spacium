@@ -76,9 +76,9 @@ def get_s5obs(lon, lat, start, end, scale=30, qc=1):
         # Put data in a dataframe
         datadf = pd.DataFrame(l_data_dict)
         
-        datadf = datadf.to_json()
+        co_sum = datadf['CO_column_number_density'].sum()
 
-        return datadf
+        return co_sum
     # if ROI is a polygon
     elif (df.geometry.type == "Polygon").bool():
 
